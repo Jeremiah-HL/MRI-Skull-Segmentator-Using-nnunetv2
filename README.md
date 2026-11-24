@@ -47,12 +47,17 @@ nnUNetv2_predict -i input_dir -o output_dir -d 501 -c 3d_fullres -f 4 \
 
 ## Method
 
-**Labels.** There is no manual skull annotation on MR. The training labels are pseudo-labels: for paired
-head-and-neck CT and MR images, the CT and the MR were coarsely aligned and the CT bone mask (generated on CT and
-reviewed by clinicians) was transferred to the MR.
+The training set was built from the public [HaN-Seg](https://doi.org/10.1002/mp.16197) head-and-neck CT and MR
+images. There is no manual skull annotation on MR, so the labels are pseudo-labels taken from the CT:
 
-**Data.** 82 MR volumes with one channel (`MRI`) and one foreground label (`skull`), resampled to 1 mm isotropic
-spacing (median size 128 × 224 × 224 voxels). nnU-Net dataset layout:
+1. **Affine pre-registration.** For each HaN-Seg case, the CT and the MR are aligned with an affine registration in
+   [NiftyReg](https://github.com/KCL-BMEIS/niftyreg) (`reg_aladin`).
+2. **Label transfer.** The skull label of the CT is used as the label of the aligned MR.
+3. **Dataset and training.** The aligned MR volumes and their labels are written as an nnU-Net v2 dataset and the
+   default nnU-Net pipeline is trained on it.
+
+The resulting dataset has 82 MR volumes with one channel (`MRI`) and one foreground label (`skull`), at 1 mm isotropic
+spacing (median size 128 x 224 x 224 voxels). The dataset itself is not included in this repository. nnU-Net dataset layout:
 
 ```text
 nnUNet_raw/Dataset501_SkullSeg/
@@ -91,18 +96,23 @@ nnU-Net's final validation on the 16 held-out cases of fold 4, measured against 
 | Median | 0.866 |
 | Range | 0.033 – 0.914 |
 
-12 of the 16 cases are above 0.85. Three cases are between 0.58 and 0.69 and one case fails (0.033). Because the
+Most cases reach a Dice of about 0.8 to 0.9: 12 of the 16 cases are above 0.85. Three cases are between 0.58 and 0.69 and one case fails (0.033). Because the
 references are pseudo-labels transferred from CT after a coarse alignment, these numbers also contain label error and
 should not be read as accuracy against a manual ground truth.
 
 ## Limitations
 
-- Trained on head-and-neck MR from a single source; behaviour on other sequences, scanners or body regions is untested.
+- Trained on HaN-Seg head-and-neck MR only; behaviour on other sequences, scanners or body regions is untested.
 - Trained from pseudo-labels, with one fold only.
 - Intended for coarse bone masks (e.g. registration initialisation), not for measurement or clinical use.
-- The training images are clinical data and are not part of this repository.
+- The training images are not redistributed here; HaN-Seg is available from its authors under its own licence.
 
 ## Acknowledgement
+
+The training data are derived from HaN-Seg:
+
+> Podobnik, G., Strojan, P., Peterlin, P., Ibragimov, B., & Vrtovec, T. (2023). HaN-Seg: The head and neck
+> organ-at-risk CT and MR segmentation dataset. *Medical Physics*, 50(3), 1917-1927.
 
 The model is trained with [nnU-Net](https://github.com/MIC-DKFZ/nnUNet):
 
